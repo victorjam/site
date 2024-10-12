@@ -1,13 +1,231 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="es">
 <head>
 <meta charset="UTF-8">
+<title>LCD Custom Char Generator</title>
 <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-<title>Document</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Iosevka/6.0.0/iosevka/iosevka.min.css" integrity="sha512-3hU20586NsplKRzjf2jQN5vTRTI2EsXObrHDOBLGdkiRkneg699BlmBXWGHHFHADCF3TOk2BREsVy7qTkmvQqQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>
+  * { box-sizing: border-box; font-family: "Iosevka web";  }
+  body { max-width: 512px; height: 100vh; margin: 0 auto; display:flex; flex-direction: column; justify-content: space-between;}
+  header { margin-bottom: 40px; border-bottom: 1px solid gray;}
+  footer { width: 100%; padding: 20px; display: flex; justify-content: center; border-top: 1px solid gray; margin-top: 40px;}
+  .wrapper { display: flex; justify-content: space-between; align-items: flex-start; }
+  .celda { border: 1px solid black; width: 24px; height: 24px; background-color: white; }
+  fieldset { flex-grow: 3; width: 100%; }
+  asideRight { display: flex; flex-direction: column; border: 1px solid black;}
+  #source { height: 400px; width: 300px;}
+  textarea { border: none; resize: none; }
+  pre { font-size: 12px; overflow: auto; }
+  button { width: 100%; padding: 5px; margin: 10px 0px; }
 </style>
 </head>
 <body>
-<h1>Victor JAM</h1>
+<div class="section">
+<header>
+  <h1>LCD Custom Char Generator</h1>
+  <p>A simple char generator based on the idea of <a href="https://maxpromer.github.io/LCD-Character-Creator/">IOXhop</a></p>
+</header>
+<div class="wrapper">
+<aside>
+<table id="tablaChar">
+    <tr><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td>00</td></tr>
+    <tr><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td>00</td></tr>
+    <tr><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td>00</td></tr>
+    <tr><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td>00</td></tr>
+    <tr><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td>00</td></tr>
+    <tr><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td>00</td></tr>
+    <tr><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td>00</td></tr>
+    <tr><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td class="celda" onclick="onClick(this)"><td>00</td></tr>
+    <tr><td>00</td><td>00</td><td>00</td><td>00</td><td>00</td></tr>
+    <tr><td colspan="6">&nbsp;</td>
+    <tr><td colspan="6"><button onclick="invertAll()">Invert</button></td></tr>
+    <tr><td colspan="6"><button onclick="setAll()">Set All</button></td></tr>
+    <tr><td colspan="6"><button onclick="clearAll()">Clear All</button></td></tr>
+  </table>
+</aside>
+<aside class="asideRight">
+  <fieldset>
+    <legend>Interface</legend>
+    <div>
+      <input type="radio" value="i2c" id="i2c" name="interface" onchange="update()"><label for="i2c">I2C</label>
+      <input type="radio" value="parallel" id="parallel" name="interface" checked onchange="update()"><label for="parallel">Parallel</label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Data type</legend>
+    <div>
+      <input type="radio" value="bin" id="bin" name="datatype" checked onchange="update()"><label for="bin">Binary</label>
+      <input type="radio" value="hex" id="hex" name="datatype" onchange="update()"><label for="hex">Hexadecimal</label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Options</legend>
+    <div>
+      <input type="checkbox" id="line" onchange="update()"><label for="line">One line</label>
+      <input type="checkbox" id="prog" onchange="update()"><label for="prog">PROGMEN</label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Source code:</legend>
+    <pre id="source">&nbsp;</pre>
+  </fieldset>
+</aside>
 </div>
+</div>
+<footer>
+VictorJAM
+</footer>
+<script>
+  function onClick(x) {
+      if ( x.style.backgroundColor=="white" || x.style.backgroundColor=="" ) 
+        x.style.backgroundColor="black";
+      else
+        x.style.backgroundColor="white";
+      update();
+    }
+
+  function toHex(x) {
+    var s=x.toString(16);
+    s = s.toUpperCase();
+    if ( s.length<2 ) 
+      s = "0"+s;
+    return s;
+  }
+  function toHex2(x) {
+    var s=x.toString(16);
+    s = s.toUpperCase();
+    if ( s.length<2 ) 
+      s = "0x0"+s;
+    else
+      s = "0x"+s;
+    
+    return s;
+
+    }
+  
+  function toBinary(x,y) {
+    var s1=x.toString(2);
+    var s2="B";
+    if ( s1.length < y ) 
+      for (var i=0; i<y-s1.length; i++) s2+="0";
+    return s2+s1;
+  }
+
+  function update() {
+      var t = document.getElementById("tablaChar");
+      var filas = 8;
+      var columnas = 5;
+      var valor=0;
+      var c=0; 
+      var f=0;
+      var cell;
+      
+      // Por columna.
+      for (c=0; c<columnas; c++) {
+        valor = 0;
+        for (f=0; f<filas; f++) {
+            cell = t.rows[f].cells[c];
+            if ( cell.style.backgroundColor=="black" ) valor |= (1<<f);
+          }
+        t.rows[filas].cells[c].innerText=toHex(valor);
+      }
+
+      // Por fila
+      for (f=0; f<filas; f++) {
+        valor = 0;
+        for (c=0; c<columnas; c++) {
+          cell = t.rows[f].cells[c];
+          if ( cell.style.backgroundColor=="black" ) valor |= (1<<((columnas-1)-c));
+        }
+        t.rows[f].cells[columnas].innerText=toHex(valor);
+      }
+
+      // El resultado.
+      var r = document.getElementById('source');
+      var face = document.querySelector('input[name="interface"]:checked');
+      var data = document.querySelector('input[name="datatype"]:checked');
+      var oneline = document.getElementById('line').checked;
+      var progmem = document.getElementById('prog').checked;
+      console.log(oneline);
+      var s;
+      if ( face.value=="i2c" ) {
+        s =  "#include <Wire.h>\n";
+        s += "#include <LiquidCrystal_I2C.h>\n\n";
+        s += "// Set the LCD address to 0x27 in PCF8574 by NXP\n";
+        s += "// and Set to 0x3F in PCF8574A by Ti\n";
+        s += "LiquidCrystal_I2C lcd(0x3F, 16, 2);\n\n";
+      } 
+      else {
+        s = "#include <LiquidCrystal.h>\n\n";
+        s += "LiquidCrystal lcd(12, 11, 5, 4, 3, 2);\n\n"
+      }
+      if ( progmem ) {
+        s += "byte bufer[8];\n\n";
+        s += "const byte charX[8] PROGMEM = { ";
+      }
+      else {
+        s += "byte charX[8]={ ";
+      }
+      if ( !oneline ) s += "\n";
+      for (f=0; f<filas; f++) {
+          valor = t.rows[f].cells[columnas].innerText;
+          if ( !oneline ) s += "  ";
+          if ( data.value=="bin" ) 
+            s += toBinary(parseInt(valor,16),5);
+          else 
+            s += toHex2(parseInt(valor, 16));
+          if (f<(filas-1)) s+=",";
+          if ( oneline ) s+=" ";
+          else s+="\n";
+        }
+      s += "};\n\n";
+      s += "void setup() {\n";
+      if ( progmem ) {
+         s+= "  memcpy_P(bufer, charX, 8);\n";
+         s+= "  lcd.createChar(0, bufer);\n";
+      }
+      else {
+        s += "  lcd.createChar(0, charX);\n";
+      }
+      s += "  lcd.begin(16, 2);\n";
+      s += "  lcd.write(byte(0));\n";
+      s += "}\n\n";
+      s += "void loop() {}\n\n";
+      r.innerText = s;
+    }
+
+function setAll() {
+  var t = document.getElementById("tablaChar");
+  var f, c;
+  for (f=0; f<8; f++) 
+    for (c=0; c<5; c++) {
+       t.rows[f].cells[c].style.backgroundColor="black";
+    }
+  update();
+}
+function clearAll() {
+  var t = document.getElementById("tablaChar");
+  var f, c;
+  for (f=0; f<8; f++) 
+    for (c=0; c<5; c++) {
+       t.rows[f].cells[c].style.backgroundColor="white";
+    }
+  update();
+}
+function invertAll() {
+  var t = document.getElementById("tablaChar");
+  var f, c;
+  for (f=0; f<8; f++) 
+    for (c=0; c<5; c++) {
+       if (t.rows[f].cells[c].style.backgroundColor=="black" ) 
+         t.rows[f].cells[c].style.backgroundColor="white";
+       else
+         t.rows[f].cells[c].style.backgroundColor="black";
+    }
+  update();
+}
+
+</script>
 </body>
 </html>
